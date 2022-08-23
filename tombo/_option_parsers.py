@@ -31,6 +31,10 @@ fasta_pos_opt=('reference', {
 fasta_event_opt=('reference_fasta', {
     'type':unicode, 'help':'Reference genome/transcriptome FASTA file ' +
     'for mapping.'})
+pickle_dir_opt=('pickle_dir',{
+    'type':unicode, 'default':'', 
+    'help':'Directory of per-read dictionaries containing parsed '+
+    'alignment information.'})
 # put re-squiggle positional arguments in one argument to allow printing
 # hidden arguments help
 rsqgl_pos_opt=('fast5s_and_reference', {
@@ -509,6 +513,9 @@ quiet_opt=(('--quiet', '-q'), {
     'default':False, 'action':'store_true',
     'help':"Don't print status information."})
 
+BAMin_opt=('--BAMin', {'default':False, 'action': 'store_true',
+    'help':"Loads alignment data from parsed BAM files (dir specificed with [pickle_dir] "+
+    "instead of performing minimap2 alignment."})
 
 ##############################
 ###### Float arguments ######
@@ -776,6 +783,9 @@ def get_resquiggle_parser():
     hid_args.add_argument(hidskpidx_opt[0], **hidskpidx_opt[1])
     hid_args.add_argument(hidincldsd_opt[0], **hidincldsd_opt[1])
     hid_args.add_argument(hidignrlock_opt[0], **hidignrlock_opt[1])
+
+    hid_args.add_argument(BAMin_opt[0], **BAMin_opt[1])
+    hid_args.add_argument(pickle_dir_opt[0], **pickle_dir_opt[1])
 
     misc_args, parser = add_misc_args(parser)
 

@@ -10,6 +10,10 @@ import queue
 import traceback
 import threading
 
+## added code to load settings
+if args.LOADBAM:
+    import pickle
+
 # pip allows tombo install without correct version of mappy, so check here
 try:
     import mappy
@@ -1279,7 +1283,7 @@ def map_read(
         fast5_data, aligner, std_ref,
         seq_samp_type=th.seqSampleType(DNA_SAMP_TYPE, False),
         bc_grp='Basecall_1D_000', bc_subgrp='BaseCalled_template',
-        map_thr_buf=None, q_score_thresh=0, seq_len_rng=None):
+        map_thr_buf=None, q_score_thresh=0, seq_len_rng=None, BAMin=False, pickle_dir=""):
     """Extract read sequence from the Fastq slot providing useful error messages
 
     Args:
@@ -1298,45 +1302,59 @@ def map_read(
     """
     seq_data = get_read_seq(
         fast5_data, bc_grp, bc_subgrp, seq_samp_type, q_score_thresh)
-    try:
-        # enumerate all alignments to avoid mappy memory leak
-        alignment = list(aligner.map(str(seq_data.seq), buf=map_thr_buf))[0]
-    except IndexError:
-        raise th.TomboError('Alignment not produced')
+    if BAMin:
+        try:
+            read_id = seq_data.id.decode('UTR-8')
+            with open(f"{pickle_dir}/{read_id}.pickle", "rb") as infile:
+                alignment = pickle.load(infile)
+        except:
+            print(seq_data.id)
+            raise th.TomboError("Alignment not found.")
+    else:
+        try:
+            # enumerate all alignments to avoid mappy memory leak
+            alignment = list(aligner.map(str(seq_data.seq), buf=map_thr_buf))[0]
+        except IndexError:
+            raise th.TomboError('Alignment not produced')
 
-    chrm = alignment.ctg
+    
+    chrm = alignment["ctg"]
     # subtract one to put into 0-based index
-    ref_start = alignment.r_st
-    ref_end = alignment.r_en
+    ref_start = alignment["r_st"]
+    ref_end = alignment["r_en"]
     if not (seq_len_rng is None or
             seq_len_rng[0] < ref_end - ref_start < seq_len_rng[1]):
         raise th.TomboError(
             'Mapped location not within --sequence-length-range')
-    strand = '+' if alignment.strand == 1 else '-'
-    num_match = alignment.mlen
-    num_ins, num_del, num_aligned = 0, 0, 0
-    for op_len, op in alignment.cigar:
+    strand = '+' if alignment["strand"] == 1 else '-'
+    #num_match = alignment.mlen
+    num_match, num_ins, num_del, num_aligned = 0, 0, 0, 0
+    for op_len, op in alignment["cigar"]:
         if op == 1: num_ins += op_len
         elif op in (2,3): num_del += op_len
-        elif op in (0,7,8): num_aligned += op_len
+        elif op in (0,8): num_aligned += op_len
+        elif op == 7: num_match += op_len
         elif op == 6: pass
+        elif op == 5: pass #added because LAST hard clips
         else:
             # soft and hard clipping are not reported in the
             # mappy cigar
+            print("invalid cigar:", op, "in:")
+            print(alignment["cigar"])
             raise th.TomboError('Invalid cigar operation')
 
     # store number of clipped bases relative to read sequence
     if strand == '+':
-        num_start_clipped_bases = alignment.q_st
-        num_end_clipped_bases = len(seq_data.seq) - alignment.q_en
+        num_start_clipped_bases = alignment["q_st"]
+        num_end_clipped_bases = len(seq_data.seq) - alignment["q_en"]
     else:
-        num_start_clipped_bases = len(seq_data.seq) - alignment.q_en
-        num_end_clipped_bases = alignment.q_st
+        num_start_clipped_bases = len(seq_data.seq) - alignment["q_en"]
+        num_end_clipped_bases = alignment["q_st"]
 
     align_info = th.alignInfo(
         seq_data.id.decode(), bc_subgrp, num_start_clipped_bases,
         num_end_clipped_bases, num_ins, num_del, num_match,
-        num_aligned - num_match)
+        num_mismatch)
 
     # extract genome sequence from mappy aligner
     # expand sequence to get model levels for all sites (need to handle new
@@ -1356,7 +1374,16 @@ def map_read(
             ref_start = dnstrm_bases
         ref_seq_start = ref_start - dnstrm_bases
         ref_seq_end = ref_end + std_ref.central_pos
-    genome_seq = aligner.seq(chrm, ref_seq_start, ref_seq_end)
+    if BAMin:
+        with open(f"{pickle_dir}/{alignment['ref_name']}.pickle", "rb") as infile:
+            ref_seq = pickle.load(infile)
+        genome_seq = "".join(ref_seq[ref_seq_start : ref_seq_end])
+
+        if genome_seq is None or genome_seq == "":
+            raise th.TomboReads("Could not find reference " + alignment["ref_name"])
+    else:
+        genome_seq = aligner.seq(chrm, ref_seq_start, ref_seq_end)
+    
     if genome_seq is None or genome_seq == '':
         raise th.TomboReads('Invalid mapping location')
 
@@ -1376,7 +1403,7 @@ def map_read(
     # end of DNA genomic sequence)
     start_clip_bases = None
     if USE_START_CLIP_BASES:
-        start_clip_bases = seq_data.seq[alignment.q_en:][::-1]
+        start_clip_bases = seq_data.seq[alignment["q_en"]:][::-1]
 
     return th.resquiggleResults(
         align_info=align_info, genome_loc=genome_loc, genome_seq=genome_seq,
@@ -1386,7 +1413,7 @@ def _io_and_map_read(
         fast5_data, failed_reads_q, bc_subgrps, bc_grp, corr_grp, aligner,
         seq_samp_type, map_thr_buf, fast5_fn, num_processed, map_conn,
         outlier_thresh, compute_sd, obs_filter, index_q, q_score_thresh,
-        sig_match_thresh, std_ref, sig_len_rng, seq_len_rng):
+        sig_match_thresh, std_ref, sig_len_rng, seq_len_rng, BAMin, pickle_dir):
     try:
         # extract channel and raw data for this read
         channel_info = th.get_channel_info(fast5_data)
@@ -1406,7 +1433,7 @@ def _io_and_map_read(
         try:
             map_res = map_read(
                 fast5_data, aligner, std_ref, seq_samp_type, bc_grp, bc_subgrp,
-                map_thr_buf, q_score_thresh, seq_len_rng)
+                map_thr_buf, q_score_thresh, seq_len_rng, BAMin, pickle_dir)
             if th.invalid_seq(map_res.genome_seq):
                 raise th.TomboError(
                     'Reference mapping contains non-canonical bases ' +
@@ -1613,7 +1640,7 @@ def _io_and_mappy_thread_worker(
         fast5_q, progress_q, failed_reads_q, index_q, bc_grp, bc_subgrps,
         corr_grp, aligner, outlier_thresh, compute_sd, sig_match_thresh,
         obs_filter, seq_samp_type, overwrite, map_conn, q_score_thresh,
-        std_ref, sig_len_rng, seq_len_rng):
+        std_ref, sig_len_rng, seq_len_rng, BAMin, pickle_dir):
     # increase update interval as more reads are provided
     proc_update_interval = 1
     def update_progress(num_processed, proc_update_interval):
@@ -1669,7 +1696,7 @@ def _io_and_mappy_thread_worker(
                 aligner, seq_samp_type, map_thr_buf, fast5_fn,
                 num_processed, map_conn, outlier_thresh, compute_sd,
                 obs_filter, index_q, q_score_thresh, sig_match_thresh, std_ref,
-                sig_len_rng, seq_len_rng)
+                sig_len_rng, seq_len_rng, BAMin, pickle_dir)
         except th.TomboError as e:
             # if re-squiggle connection is dead then this thread can no longer
             # successfully process reads
@@ -1862,7 +1889,7 @@ def resquiggle_all_reads(
         compute_sd, skip_index, rsqgl_params, save_params, sig_match_thresh,
         obs_filter, const_scale, q_score_thresh, skip_seq_scaling,
         max_scaling_iters, failed_reads_fn, fast5s_basedir, num_update_errors,
-        sig_len_rng, seq_len_rng):
+        sig_len_rng, seq_len_rng, BAMin, pickle_dir):
     """Perform genomic alignment and re-squiggle algorithm
     """
     fast5_q = mp.Queue(maxsize=_MAX_QUEUE_SIZE)
@@ -1920,7 +1947,7 @@ def resquiggle_all_reads(
         map_args = (fast5_q, progress_q, failed_reads_q, index_q, bc_grp,
                     bc_subgrps, corr_grp, aligner, outlier_thresh, compute_sd,
                     sig_match_thresh, obs_filter, seq_samp_type, overwrite,
-                    map_conn, q_score_thresh, std_ref, sig_len_rng, seq_len_rng)
+                    map_conn, q_score_thresh, std_ref, sig_len_rng, seq_len_rng, BAMin, pickle_dir)
         t = threading.Thread(target=_io_and_mappy_thread_worker,
                              args=map_args)
         t.daemon = True
@@ -2018,6 +2045,19 @@ def _resquiggle_main(args):
         th.error_message_and_exit(
             '--basecall-group and --corrected-group must ' +
             'be different.')
+    if args.BAMin:
+        th.status_message(
+            'Alternative input from parsed BAM files (as pickles) selected.'
+            )
+        if not os.path.isdir(args.pickle_dir):
+            th.error_message_and_exit(
+                'Provided [pickle_dir] is not a directory.'
+                )
+    elif os.path.isdir(args.pickle_dir):
+        th.error_message_and_exit(
+            '[pickle_dir] provided but option [BAMin] is not set.'
+            )
+
 
     # check simple arguments for validity first
     outlier_thresh = args.outlier_threshold
@@ -2081,7 +2121,7 @@ def _resquiggle_main(args):
             args.skip_sequence_rescaling, args.max_scaling_iterations,
             args.failed_reads_filename, fast5s_basedir,
             args.num_most_common_errors, args.signal_length_range,
-            args.sequence_length_range)
+            args.sequence_length_range, args.BAMin, args.pickle_dir)
     finally:
         th.clear_tombo_locks(lock_fns)
 
