@@ -9,10 +9,7 @@ import sys
 import queue
 import traceback
 import threading
-
-## added code to load settings
-if args.LOADBAM:
-    import pickle
+import pickle
 
 # pip allows tombo install without correct version of mappy, so check here
 try:
