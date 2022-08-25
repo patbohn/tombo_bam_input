@@ -1312,9 +1312,8 @@ def map_read(
             with open(f"{pickle_dir}/{read_id}.pickle", "rb") as infile:
                 alignment = pickle.load(infile)
             alignment = dotdict(alignment)
-        except:
-            print(seq_data.id)
-            raise th.TomboError("Alignment not found.")
+        except Exception as e:
+            raise th.TomboError(f"Alignment not found.\n{pickle_dir}/{read_id}.pickle\n{e}")
     else:
         try:
             # enumerate all alignments to avoid mappy memory leak
