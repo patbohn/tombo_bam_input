@@ -1333,11 +1333,11 @@ def map_read(
             'Mapped location not within --sequence-length-range')
     strand = '+' if alignment.strand == 1 else '-'
     #num_match = alignment.mlen
-    num_match, num_ins, num_del, num_aligned = 0, 0, 0, 0
+    num_match, num_ins, num_del, num_mismatch = 0, 0, 0, 0
     for op_len, op in alignment.cigar:
         if op == 1: num_ins += op_len
         elif op in (2,3): num_del += op_len
-        elif op in (0,8): num_aligned += op_len
+        elif op in (0,8): num_mismatch += op_len
         elif op == 7: num_match += op_len
         elif op == 6: pass
         elif op == 5: pass #added because LAST hard clips
