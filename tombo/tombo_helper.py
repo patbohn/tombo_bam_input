@@ -358,7 +358,7 @@ def error_message_and_exit(message):
     sys.stderr.write(
         '*' * 20 + ' ERROR ' + '*' * 20 + '\n\t' +
         message + '\n')
-    sys.exit()
+    sys.exit(1)
     return
 
 def resolve_path(fn_path):
