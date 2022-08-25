@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description="Parse BAM files to pickle files fo
 parser.add_argument("-b", "--bam_input", metavar="path", type=str, help="path to bam input file", required=True)
 parser.add_argument("-f", "--reference_file", metavar="path", type=str, help="path to bam input file", required=True)
 parser.add_argument("-d", "--data_output_dir", metavar="path", type=str, help="path to bam input file", required=True)
-parser.add_argument("-c", "--continue", action="store_true", help="allows resuming unfinished parsing")
+parser.add_argument("-c", "--continue_work", action="store_true", help="allows resuming unfinished parsing")
 parser.add_argument("-ow", "--overwrite", action="store_true", help="overwrites/deletes specificed dicitionary before starting")
 
 
@@ -78,4 +78,4 @@ def parse_BAM_to_pickle(bam_input, reference_file, data_output_dir, continue_opt
 
 if name == "__main__":
     args = parser.parse_args()
-    parse_BAM_to_pickle(args.bam_input, args.reference_file, args.data_output_dir, args.continue, args.overwrite)
+    parse_BAM_to_pickle(args.bam_input, args.reference_file, args.data_output_dir, args.continue_work, args.overwrite)
