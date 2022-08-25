@@ -17,7 +17,7 @@ def parse_BAM_to_pickle(bam_input, reference_file, dict_output_dir, continue_opt
 
     os.makedirs(dict_output_dir, exist_ok=True)
 
-    filenames_present = (filename.split(".pickle")[0] for filename in os.listdir(dict_outputdir))
+    filenames_present = (filename.split(".pickle")[0] for filename in os.listdir(dict_output_dir))
     num_files_in_dict = len(filenames_present)
     if num_files_in_dict>0:
         print("Already files present at output location")
