@@ -253,7 +253,7 @@ motifdescsimp_opt=('--motif-descriptions', {
     'Example: CCWGG:2:dcm_5mC GATC:2:dam_6mA would filter output for ' +
     'identification of E. coli dam and dcm methylation.'})
 
-pickle_dir_opt=('--pickle_dir',{
+pickle_dir_opt=('--pickle-dir',{
     'type':unicode, 'default':'', 'nargs' : '+', 
     'help':'Directory of per-read dictionaries containing parsed '+
     'alignment information.'})
@@ -515,7 +515,7 @@ quiet_opt=(('--quiet', '-q'), {
     'help':"Don't print status information."})
 
 BAMin_opt=('--BAMin', {'default':False, 'action': 'store_true',
-    'help':"Loads alignment data from parsed BAM files (dir specificed with [pickle_dir] "+
+    'help':"Loads alignment data from parsed BAM files (dir specificed with [--pickle-dir] "+
     "instead of performing minimap2 alignment."})
 
 ##############################
