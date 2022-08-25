@@ -11,6 +11,13 @@ import traceback
 import threading
 import pickle
 
+#generate a dict accessible via dot notation so that it is compatible with mappy
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 # pip allows tombo install without correct version of mappy, so check here
 try:
     import mappy
@@ -1304,6 +1311,7 @@ def map_read(
             read_id = seq_data.id.decode('UTR-8')
             with open(f"{pickle_dir}/{read_id}.pickle", "rb") as infile:
                 alignment = pickle.load(infile)
+            alignment = dotdict(alignment)
         except:
             print(seq_data.id)
             raise th.TomboError("Alignment not found.")
@@ -1315,18 +1323,18 @@ def map_read(
             raise th.TomboError('Alignment not produced')
 
     
-    chrm = alignment["ctg"]
+    chrm = alignment.ctg
     # subtract one to put into 0-based index
-    ref_start = alignment["r_st"]
-    ref_end = alignment["r_en"]
+    ref_start = alignment.r_st
+    ref_end = alignment.r_en
     if not (seq_len_rng is None or
             seq_len_rng[0] < ref_end - ref_start < seq_len_rng[1]):
         raise th.TomboError(
             'Mapped location not within --sequence-length-range')
-    strand = '+' if alignment["strand"] == 1 else '-'
+    strand = '+' if alignment.strand == 1 else '-'
     #num_match = alignment.mlen
     num_match, num_ins, num_del, num_aligned = 0, 0, 0, 0
-    for op_len, op in alignment["cigar"]:
+    for op_len, op in alignment.cigar:
         if op == 1: num_ins += op_len
         elif op in (2,3): num_del += op_len
         elif op in (0,8): num_aligned += op_len
@@ -1337,16 +1345,16 @@ def map_read(
             # soft and hard clipping are not reported in the
             # mappy cigar
             print("invalid cigar:", op, "in:")
-            print(alignment["cigar"])
+            print(alignment.cigar)
             raise th.TomboError('Invalid cigar operation')
 
     # store number of clipped bases relative to read sequence
     if strand == '+':
-        num_start_clipped_bases = alignment["q_st"]
-        num_end_clipped_bases = len(seq_data.seq) - alignment["q_en"]
+        num_start_clipped_bases = alignment.q_st
+        num_end_clipped_bases = len(seq_data.seq) - alignment.q_en
     else:
-        num_start_clipped_bases = len(seq_data.seq) - alignment["q_en"]
-        num_end_clipped_bases = alignment["q_st"]
+        num_start_clipped_bases = len(seq_data.seq) - alignment.q_en
+        num_end_clipped_bases = alignment.q_st
 
     align_info = th.alignInfo(
         seq_data.id.decode(), bc_subgrp, num_start_clipped_bases,
@@ -1377,7 +1385,7 @@ def map_read(
         genome_seq = "".join(ref_seq[ref_seq_start : ref_seq_end])
 
         if genome_seq is None or genome_seq == "":
-            raise th.TomboReads("Could not find reference " + alignment["ref_name"])
+            raise th.TomboReads("Could not find reference " + alignment.ref_name)
     else:
         genome_seq = aligner.seq(chrm, ref_seq_start, ref_seq_end)
     
@@ -1400,7 +1408,7 @@ def map_read(
     # end of DNA genomic sequence)
     start_clip_bases = None
     if USE_START_CLIP_BASES:
-        start_clip_bases = seq_data.seq[alignment["q_en"]:][::-1]
+        start_clip_bases = seq_data.seq[alignment.q_en:][::-1]
 
     return th.resquiggleResults(
         align_info=align_info, genome_loc=genome_loc, genome_seq=genome_seq,
