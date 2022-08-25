@@ -76,6 +76,6 @@ def parse_BAM_to_pickle(bam_input, reference_file, data_output_dir, continue_opt
     return dict_output_dir
 
 
-if name == "__main__":
+if __name__ == "__main__":
     args = parser.parse_args()
     parse_BAM_to_pickle(args.bam_input, args.reference_file, args.data_output_dir, args.continue_work, args.overwrite)
