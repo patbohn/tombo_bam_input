@@ -13,10 +13,8 @@ parser.add_argument("-ow", "--overwrite", action="store_true", help="overwrites/
 
 
 
-def parse_BAM_to_pickle(bam_input, reference_file, data_output_dir, continue_opt = False, overwrite_opt=False):
+def parse_BAM_to_pickle(bam_input, reference_file, dict_output_dir, continue_opt = False, overwrite_opt=False):
 
-    alignment_dir = paths["project_dir"] + "/" + paths["analysis_prefix"] + "/data/" + sample + "/bamtx/"
-    dict_output_dir = data_output_dir + "/tombo_read_align_dicts/"
     os.mkdirs(dict_output_dir, exist_ok=True)
 
     filenames_present = (filename.split(".pickle")[0] for filename in os.listdir(dict_outputdir))
