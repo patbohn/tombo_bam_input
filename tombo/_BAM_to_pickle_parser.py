@@ -21,16 +21,16 @@ def parse_BAM_to_pickle(bam_input, reference_file, dict_output_dir, continue_opt
     filenames_present = set([filename.split(".pickle")[0] for filename in os.listdir(dict_output_dir)])
     num_files_in_dict = len(filenames_present)
     if num_files_in_dict>0:
-        print("Already files present at output location", file=sys.stderr)
+        print("[bam_to_dict_parser] Already files present at output location", file=sys.stderr)
         if not continue_opt and not overwrite_opt:
-            print("Neither [continue_opt] nor [overwrite_opt] options are set, exiting without generating dicts", file=sys.stderr)
+            print("[bam_to_dict_parser] Neither [continue_opt] nor [overwrite_opt] options are set, exiting without generating dicts", file=sys.stderr)
             sys.exit(1)
         elif overwrite_opt:
-            print("Overwrite option set, deleting old and overwriting all data", file=sys.stderr)
+            print("[bam_to_dict_parser] Overwrite option set, deleting old and overwriting all data", file=sys.stderr)
             os.system(f"rm -r {dict_output_dir}")
             os.mkdirs(dict_output_dir, exist_ok=True)
         elif continue_opt:
-            print(f"Continuing from previous parsing, already {num_files_in_dict} files present", file=sys.stderr)
+            print(f"[bam_to_dict_parser] Continuing from previous parsing, already {num_files_in_dict} files present", file=sys.stderr)
         
     reference = SeqIO.read(reference_file, "fasta")
     
@@ -70,7 +70,7 @@ def parse_BAM_to_pickle(bam_input, reference_file, dict_output_dir, continue_opt
         
     with open(f"{dict_output_dir}/{reference.id}.pickle", "wb") as outfile:
         pickle.dump(reference.seq.upper().__str__(), outfile)
-    print(f"Wrote reference file {dict_output_dir}/{reference.id}.pickle", file=sys.stderr)
+    print(f"[bam_to_dict_parser] Wrote reference file {dict_output_dir}/{reference.id}.pickle\n", file=sys.stderr)
 
     return dict_output_dir
 
