@@ -1308,7 +1308,7 @@ def map_read(
         fast5_data, bc_grp, bc_subgrp, seq_samp_type, q_score_thresh)
     if BAMin:
         try:
-            read_id = seq_data.id.decode('UTR-8')
+            read_id = seq_data.id.decode('UTF-8')
             with open(f"{pickle_dir}/{read_id}.pickle", "rb") as infile:
                 alignment = pickle.load(infile)
             alignment = dotdict(alignment)
