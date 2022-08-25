@@ -253,7 +253,7 @@ motifdescsimp_opt=('--motif-descriptions', {
     'Example: CCWGG:2:dcm_5mC GATC:2:dam_6mA would filter output for ' +
     'identification of E. coli dam and dcm methylation.'})
 
-pickle_dir_opt=('pickle_dir',{
+pickle_dir_opt=('--pickle_dir',{
     'type':unicode, 'default':'', 'nargs' : '+', 
     'help':'Directory of per-read dictionaries containing parsed '+
     'alignment information.'})
