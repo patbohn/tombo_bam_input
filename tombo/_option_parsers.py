@@ -254,7 +254,7 @@ motifdescsimp_opt=('--motif-descriptions', {
     'identification of E. coli dam and dcm methylation.'})
 
 pickle_dir_opt=('pickle_dir',{
-    'type':unicode, 'default':'', 
+    'type':unicode, 'default':'', 'nargs' : '+', 
     'help':'Directory of per-read dictionaries containing parsed '+
     'alignment information.'})
 
