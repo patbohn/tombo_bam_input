@@ -31,10 +31,7 @@ fasta_pos_opt=('reference', {
 fasta_event_opt=('reference_fasta', {
     'type':unicode, 'help':'Reference genome/transcriptome FASTA file ' +
     'for mapping.'})
-pickle_dir_opt=('pickle_dir',{
-    'type':unicode, 'default':'', 
-    'help':'Directory of per-read dictionaries containing parsed '+
-    'alignment information.'})
+
 # put re-squiggle positional arguments in one argument to allow printing
 # hidden arguments help
 rsqgl_pos_opt=('fast5s_and_reference', {
@@ -256,6 +253,10 @@ motifdescsimp_opt=('--motif-descriptions', {
     'Example: CCWGG:2:dcm_5mC GATC:2:dam_6mA would filter output for ' +
     'identification of E. coli dam and dcm methylation.'})
 
+pickle_dir_opt=('pickle_dir',{
+    'type':unicode, 'default':'', 
+    'help':'Directory of per-read dictionaries containing parsed '+
+    'alignment information.'})
 
 ############################
 ###### Int arguments ######
