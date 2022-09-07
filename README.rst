@@ -3,7 +3,8 @@
 
 
 
-# Changes by me:
+Changes by me:
+
 - added script (_BAM_to_dict.py) to parse a BAM alignment file into dict objects stored as pickles, to be loaded during resquiggling to replace the internal minimap2 alignment with any other
 - added --BAMin option that then requires --pickle-dir, the output dir of the previous script
 
